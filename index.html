@@ -1,0 +1,1085 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Translate commands between Cisco Catalyst 3850 and Juniper EX3400 switches, with troubleshooting playbooks.">
+<title>Catalyst to EX Command Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: sticky toolbar (tabs + direction swap) over a variables strip; below it a search-driven list of side-by-side command panes. */
+:root {
+  --bg: #f1f4f7;
+  --surface: #ffffff;
+  --ink: #13202b;
+  --muted: #566776;
+  --line: #d6dde4;
+  --soft: #e8edf2;
+  --cisco: #0a6f9a;
+  --cisco-bg: #e3f1f8;
+  --juniper: #466f14;
+  --juniper-bg: #ecf4df;
+  --code: #0f1b25;
+  --code-muted: #6b7c8a;
+  --var: #7a4d00;
+  --var-bg: #fbeccb;
+  --danger: #b3261e;
+  --focus: #1a6fd1;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d141a;
+    --surface: #151f27;
+    --ink: #e5ecf2;
+    --muted: #92a2b0;
+    --line: #2a3844;
+    --soft: #1d2a35;
+    --cisco: #55c1ea;
+    --cisco-bg: #0f2f3d;
+    --juniper: #a6d65f;
+    --juniper-bg: #1b2a10;
+    --code: #e5ecf2;
+    --code-muted: #7e8f9d;
+    --var: #f0c46a;
+    --var-bg: #3a2c0c;
+    --danger: #ff8a80;
+    --focus: #6aa8ff;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d141a;
+  --surface: #151f27;
+  --ink: #e5ecf2;
+  --muted: #92a2b0;
+  --line: #2a3844;
+  --soft: #1d2a35;
+  --cisco: #55c1ea;
+  --cisco-bg: #0f2f3d;
+  --juniper: #a6d65f;
+  --juniper-bg: #1b2a10;
+  --code: #e5ecf2;
+  --code-muted: #7e8f9d;
+  --var: #f0c46a;
+  --var-bg: #3a2c0c;
+  --danger: #ff8a80;
+  --focus: #6aa8ff;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 0 56px; }
+
+/* toolbar */
+.bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg);
+  padding-block: 14px 10px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px;
+  border-bottom: 1px solid var(--line);
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--bg);
+}
+.brand { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; margin-right: auto; white-space: nowrap; }
+.brand small { display: block; font-size: 11.5px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+.tabs { display: flex; gap: 2px; background: var(--soft); padding: 3px; border-radius: 8px; }
+.tab { border: 0; background: transparent; padding: 6px 14px; border-radius: 6px; color: var(--muted); font-weight: 500; }
+.tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.swap {
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid var(--line); background: var(--surface);
+  border-radius: 8px; padding: 6px 10px; font-weight: 500;
+}
+.swap:hover { border-color: var(--muted); }
+.swap .c { color: var(--cisco); } .swap .j { color: var(--juniper); }
+.swap svg { width: 18px; height: 18px; stroke: var(--muted); fill: none; stroke-width: 1.8; }
+
+/* variables */
+.vars { padding-block: 14px 4px; }
+.vars-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.eyebrow { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.vars-head .hint { color: var(--muted); font-size: 12.5px; }
+.vars-head button { margin-left: auto; border: 0; background: none; color: var(--muted); text-decoration: underline; font-size: 12.5px; padding: 0; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; }
+.field label { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 2px; }
+.field input {
+  width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 8px; font-family: var(--font-mono); font-size: 13px;
+}
+.field input[aria-invalid="true"] { border-color: var(--danger); }
+.field .sub { font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); min-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.field .sub.bad { color: var(--danger); }
+.field.wide { grid-column: span 2; }
+@media (max-width: 520px) { .field.wide { grid-column: span 1; } }
+
+/* search + filters */
+.search { margin-top: 16px; position: relative; }
+.search input {
+  width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 13px 44px 13px 16px; font-size: 16px; font-family: var(--font-mono);
+}
+.search input::placeholder { font-family: var(--font-ui); color: var(--muted); }
+.search kbd {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; font-family: var(--font-mono);
+  font-size: 12px; color: var(--muted); background: var(--soft);
+}
+.filters { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; }
+.chip {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+  padding: 3px 11px; font-size: 12.5px; color: var(--muted);
+}
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.filters .sep { width: 1px; height: 18px; background: var(--line); margin: 0 4px; }
+.count { color: var(--muted); font-size: 12.5px; margin: 14px 0 4px; }
+
+/* rows */
+.group-title { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 26px 0 8px; }
+.row { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px 12px; margin-top: 10px; }
+.row-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 8px; }
+.row-head h3 { margin: 0; font-size: 14.5px; font-weight: 600; margin-right: auto; text-wrap: balance; }
+.tag { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); font-weight: 500; }
+.tag.cfg { background: var(--var-bg); color: var(--var); }
+.panes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 760px) { .panes { grid-template-columns: 1fr; } }
+.pane { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; min-width: 0; display: flex; flex-direction: column; }
+.pane-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 4px 10px; font-size: 11.5px; font-weight: 600; letter-spacing: .02em; }
+.pane.cisco .pane-head { background: var(--cisco-bg); color: var(--cisco); }
+.pane.juniper .pane-head { background: var(--juniper-bg); color: var(--juniper); }
+.pane-head .need { font-weight: 400; opacity: .85; margin-left: 8px; }
+.copy { border: 0; background: transparent; color: inherit; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 5px; }
+.copy:hover { background: rgba(127,127,127,.18); }
+pre {
+  margin: 0; padding: 9px 11px; font-family: var(--font-mono); font-size: 13px; line-height: 1.55;
+  color: var(--code); overflow-x: auto; white-space: pre; flex: 1;
+}
+pre .cm { color: var(--code-muted); font-style: italic; }
+.var { background: var(--var-bg); color: var(--var); border-radius: 3px; padding: 0 2px; }
+.note { margin: 8px 2px 0; color: var(--muted); font-size: 12.5px; max-width: 90ch; }
+
+/* troubleshooting */
+.ts { display: grid; grid-template-columns: 250px 1fr; gap: 24px; margin-top: 18px; align-items: start; }
+@media (max-width: 820px) { .ts { grid-template-columns: 1fr; gap: 12px; } }
+.ts-list { display: flex; flex-direction: column; gap: 4px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 66px); }
+@media (max-width: 820px) { .ts-list { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px; } }
+.ts-btn { text-align: left; border: 1px solid transparent; background: transparent; padding: 8px 10px; border-radius: 8px; color: var(--ink); }
+.ts-btn small { display: block; color: var(--muted); font-size: 12px; }
+.ts-btn:hover { background: var(--soft); }
+.ts-btn[aria-current="true"] { background: var(--surface); border-color: var(--line); }
+@media (max-width: 820px) {
+  .ts-btn { border-color: var(--line); background: var(--surface); padding: 5px 11px; border-radius: 999px; }
+  .ts-btn small { display: none; }
+  .ts-btn[aria-current="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+}
+.ts-title { margin: 0; font-size: 20px; letter-spacing: -0.01em; }
+.ts-intro { color: var(--muted); margin: 4px 0 6px; max-width: 70ch; }
+.step { display: grid; grid-template-columns: 30px 1fr; gap: 4px 10px; margin-top: 6px; }
+.step-n { width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: var(--bg); font-size: 12.5px; font-weight: 600; display: grid; place-items: center; margin-top: 12px; font-variant-numeric: tabular-nums; }
+.look { margin: 8px 2px 0; font-size: 13px; }
+.look b { font-weight: 600; }
+
+.empty { text-align: center; color: var(--muted); padding: 48px 0; }
+footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="bar">
+    <div class="brand">Catalyst ⇄ EX command map<small>Cisco Catalyst 3850 (IOS-XE) and Juniper EX3400 (Junos ELS)</small></div>
+    <div class="tabs" role="tablist" aria-label="View">
+      <button class="tab" role="tab" id="tab-translate" aria-selected="true" data-tab="translate">Translate</button>
+      <button class="tab" role="tab" id="tab-ts" aria-selected="false" data-tab="ts">Troubleshoot</button>
+    </div>
+    <button class="swap" id="swap" title="Swap which platform is on the left">
+      <span id="swap-l" class="c">Cisco 3850</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h14m0 0-4-4m4 4-4 4M20 16H6m0 0 4-4m-4 4 4 4"/></svg>
+      <span id="swap-r" class="j">Juniper EX3400</span>
+    </button>
+  </header>
+
+  <section class="vars" aria-label="Values used in commands">
+    <div class="vars-head">
+      <span class="eyebrow">Your values</span>
+      <span class="hint">Highlighted in every command below. Either port style works.</span>
+      <button id="reset" type="button">Reset</button>
+    </div>
+    <div class="fields" id="fields"></div>
+  </section>
+
+  <main id="view-translate">
+    <div class="search">
+      <input id="q" type="search" autocomplete="off" spellcheck="false" aria-label="Search commands"
+        placeholder="Paste a command or describe the task: show mac address-table, trunk, bpdu guard, poe…">
+      <kbd aria-hidden="true">/</kbd>
+    </div>
+    <div class="filters" id="filters" role="group" aria-label="Filter"></div>
+    <div class="count" id="count" aria-live="polite"></div>
+    <div id="results"></div>
+  </main>
+
+  <main id="view-ts" hidden>
+    <div class="ts">
+      <nav class="ts-list" id="ts-list" aria-label="Symptoms"></nav>
+      <div id="ts-body"></div>
+    </div>
+  </main>
+
+  <footer>
+    Commands target IOS-XE 16.x on the 3850 and Junos ELS 18.x or later on the EX3400. Junos configuration lines are entered after <code>configure</code> and take effect on <code>commit</code>. Check syntax against your software release before using it on production gear.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- command database ---------- */
+  const E = [];
+  function add(id, cat, kind, title, cisco, junos, note) {
+    E.push({ id, cat, kind, title, cisco: cisco.split("\n"), junos: junos.split("\n"), note: note || "" });
+  }
+
+  // Interfaces
+  add("if-status", "Interfaces", "show", "Interface status summary",
+    "show interfaces status",
+    "show interfaces terse",
+    "Junos terse shows admin and link state only. Add | match ge- to limit output to access ports. Use show ethernet-switching interface for VLAN membership.");
+  add("if-detail", "Interfaces", "show", "Interface detail and counters",
+    "show interfaces {port}",
+    "show interfaces {jport} extensive",
+    "EX3400 uplinks are xe-0/2/0 to xe-0/2/3 (SFP+) and et-0/1/0 to et-0/1/1 (QSFP+).");
+  add("if-errors", "Interfaces", "show", "Input and output errors",
+    "show interfaces {port} counters errors",
+    "show interfaces {jport} extensive | find \"Input errors\"",
+    "CRC and framing errors usually mean a bad cable, bad optic or a duplex mismatch.");
+  add("if-rate", "Interfaces", "show", "Live traffic rate",
+    "show interfaces {port} | include rate",
+    "monitor interface {jport}",
+    "monitor interface refreshes every second. Press q to quit.");
+  add("if-clear", "Interfaces", "show", "Clear interface counters",
+    "clear counters {port}",
+    "clear interfaces statistics {jport}",
+    "Clear, wait a few minutes, then check errors again to see whether they are still climbing.");
+  add("if-optics", "Interfaces", "show", "Optic light levels (DOM)",
+    "show interfaces {port} transceiver detail",
+    "show interfaces diagnostics optics {jport}",
+    "Only works on SFP/SFP+/QSFP+ uplink ports with DOM support.");
+  add("if-desc", "Interfaces", "cfg", "Set interface description",
+    "interface {port}\n description Uplink to core",
+    "set interfaces {jport} description \"Uplink to core\"");
+  add("if-shut", "Interfaces", "cfg", "Shut down or enable a port",
+    "interface {port}\n shutdown\n no shutdown",
+    "set interfaces {jport} disable\ndelete interfaces {jport} disable",
+    "First line of each side disables the port, second line brings it back.");
+  add("if-speed", "Interfaces", "cfg", "Hard-set speed and duplex",
+    "interface {port}\n speed 1000\n duplex full",
+    "set interfaces {jport} speed 1g\nset interfaces {jport} link-mode full-duplex",
+    "Leave both ends on auto-negotiation unless a device requires otherwise.");
+  add("if-range", "Interfaces", "cfg", "Configure a range of ports",
+    "interface range {port} - 12\n switchport mode access\n switchport access vlan {vlan}",
+    "set interfaces interface-range ACCESS member-range ge-0/0/0 to ge-0/0/11\nset interfaces interface-range ACCESS unit 0 family ethernet-switching interface-mode access\nset interfaces interface-range ACCESS unit 0 family ethernet-switching vlan members {vlanname}",
+    "Edit the range end to suit. Junos interface-range is a named group you can reuse.");
+  add("if-mtu", "Interfaces", "cfg", "Jumbo frames",
+    "system mtu 9198\n# reload required on the 3850",
+    "set interfaces {jport} mtu 9216",
+    "The Catalyst setting is global. On Junos, set the MTU per interface.");
+
+  // VLANs
+  add("vlan-show", "VLANs", "show", "List VLANs and member ports",
+    "show vlan brief",
+    "show vlans");
+  add("vlan-id", "VLANs", "show", "Ports in one VLAN",
+    "show vlan id {vlan}",
+    "show vlans {vlanname}");
+  add("vlan-trunk-show", "VLANs", "show", "Trunk ports and allowed VLANs",
+    "show interfaces trunk",
+    "show ethernet-switching interface",
+    "Junos lists every port with its tagged and untagged VLANs and STP state.");
+  add("vlan-create", "VLANs", "cfg", "Create a VLAN",
+    "vlan {vlan}\n name {vlanname}",
+    "set vlans {vlanname} vlan-id {vlan}",
+    "Junos assigns ports by VLAN name, so the name matters here.");
+  add("vlan-access", "VLANs", "cfg", "Access port in a VLAN",
+    "interface {port}\n switchport mode access\n switchport access vlan {vlan}",
+    "set interfaces {jport} unit 0 family ethernet-switching interface-mode access\nset interfaces {jport} unit 0 family ethernet-switching vlan members {vlanname}");
+  add("vlan-trunk", "VLANs", "cfg", "802.1Q trunk port",
+    "interface {port}\n switchport mode trunk\n switchport trunk allowed vlan {vlan}",
+    "set interfaces {jport} unit 0 family ethernet-switching interface-mode trunk\nset interfaces {jport} unit 0 family ethernet-switching vlan members {vlanname}",
+    "Use vlan members all on Junos to carry every VLAN. On Cisco, use allowed vlan add to extend an existing list.");
+  add("vlan-native", "VLANs", "cfg", "Native (untagged) VLAN on a trunk",
+    "interface {port}\n switchport trunk native vlan 99",
+    "set interfaces {jport} native-vlan-id 99",
+    "Both ends of the trunk must agree on the native VLAN.");
+  add("vlan-svi", "VLANs", "cfg", "VLAN interface with IP address (SVI / IRB)",
+    "interface vlan {vlan}\n ip address {ip} {mask}\n no shutdown",
+    "set interfaces irb unit {vlan} family inet address {ip}/{prefix}\nset vlans {vlanname} l3-interface irb.{vlan}",
+    "Cisco calls it an SVI. Junos calls it an IRB interface bound to the VLAN.");
+
+  // Routing
+  add("ip-brief", "Routing", "show", "IP addresses on interfaces",
+    "show ip interface brief",
+    "show interfaces terse | match inet");
+  add("route-table", "Routing", "show", "Routing table",
+    "show ip route",
+    "show route");
+  add("route-lookup", "Routing", "show", "Route to a specific address",
+    "show ip route {remote}",
+    "show route {remote}");
+  add("route-summary", "Routing", "show", "Routing table summary",
+    "show ip route summary",
+    "show route summary");
+  add("ospf-nbr", "Routing", "show", "OSPF neighbors",
+    "show ip ospf neighbor",
+    "show ospf neighbor");
+  add("vrrp", "Routing", "show", "First-hop redundancy status",
+    "show standby brief",
+    "show vrrp brief",
+    "Cisco HSRP maps to Junos VRRP. Cisco also supports VRRP with show vrrp brief.");
+  add("route-enable", "Routing", "cfg", "Enable Layer 3 routing",
+    "ip routing",
+    "# nothing to enable: Junos routes as soon as an L3 interface exists",
+    "");
+  add("route-routed-port", "Routing", "cfg", "Routed (Layer 3) port",
+    "interface {port}\n no switchport\n ip address {ip} {mask}",
+    "set interfaces {jport} unit 0 family inet address {ip}/{prefix}");
+  add("route-default", "Routing", "cfg", "Default route",
+    "ip route 0.0.0.0 0.0.0.0 {remote}",
+    "set routing-options static route 0.0.0.0/0 next-hop {remote}");
+  add("dhcp-relay", "Routing", "cfg", "DHCP relay",
+    "interface vlan {vlan}\n ip helper-address {remote}",
+    "set forwarding-options dhcp-relay server-group DHCP {remote}\nset forwarding-options dhcp-relay group RELAY active-server-group DHCP\nset forwarding-options dhcp-relay group RELAY interface irb.{vlan}");
+
+  // MAC & ARP
+  add("mac-all", "MAC & ARP", "show", "MAC address table",
+    "show mac address-table",
+    "show ethernet-switching table");
+  add("mac-port", "MAC & ARP", "show", "MACs learned on a port",
+    "show mac address-table interface {port}",
+    "show ethernet-switching table interface {jport}");
+  add("mac-vlan", "MAC & ARP", "show", "MACs in a VLAN",
+    "show mac address-table vlan {vlan}",
+    "show ethernet-switching table vlan-name {vlanname}");
+  add("mac-find", "MAC & ARP", "show", "Find a specific MAC",
+    "show mac address-table address {maccisco}",
+    "show ethernet-switching table {mac}",
+    "Cisco writes MACs as xxxx.xxxx.xxxx. Junos uses colons.");
+  add("mac-clear", "MAC & ARP", "show", "Clear learned MACs",
+    "clear mac address-table dynamic",
+    "clear ethernet-switching table");
+  add("arp-show", "MAC & ARP", "show", "ARP table",
+    "show ip arp",
+    "show arp no-resolve",
+    "no-resolve skips DNS lookups, which keeps output fast.");
+  add("arp-find", "MAC & ARP", "show", "ARP entry for one host",
+    "show ip arp {remote}",
+    "show arp hostname {remote}");
+  add("arp-clear", "MAC & ARP", "show", "Clear ARP cache",
+    "clear arp-cache",
+    "clear arp");
+
+  // Spanning tree
+  add("stp-bridge", "Spanning tree", "show", "Root bridge and local bridge ID",
+    "show spanning-tree root",
+    "show spanning-tree bridge");
+  add("stp-ports", "Spanning tree", "show", "Port roles and states",
+    "show spanning-tree",
+    "show spanning-tree interface");
+  add("stp-blocked", "Spanning tree", "show", "Blocked ports",
+    "show spanning-tree blockedports",
+    "show spanning-tree interface | match BLK");
+  add("stp-mode", "Spanning tree", "cfg", "Enable rapid spanning tree",
+    "spanning-tree mode rapid-pvst",
+    "set protocols rstp interface all",
+    "Cisco rapid-pvst runs one instance per VLAN. Junos RSTP runs one instance. Use vstp for per-VLAN trees.");
+  add("stp-priority", "Spanning tree", "cfg", "Make this switch the root",
+    "spanning-tree vlan {vlan} priority 4096",
+    "set protocols rstp bridge-priority 4k",
+    "Lower priority wins. Junos accepts values such as 4k, 8k and 32k.");
+  add("stp-edge", "Spanning tree", "cfg", "Edge port with BPDU guard",
+    "interface {port}\n spanning-tree portfast\n spanning-tree bpduguard enable",
+    "set protocols rstp interface {jport} edge\nset protocols rstp bpdu-block-on-edge",
+    "Junos applies BPDU blocking to all edge ports at once.");
+  add("stp-recover", "Spanning tree", "cfg", "Auto-recover BPDU-blocked ports",
+    "errdisable recovery cause bpduguard\nerrdisable recovery interval 300",
+    "set protocols layer2-control bpdu-block disable-timeout 300");
+
+  // LAG
+  add("lag-summary", "LAG", "show", "Port-channel summary",
+    "show etherchannel summary",
+    "show interfaces terse ae*");
+  add("lag-detail", "LAG", "show", "LACP partner and member status",
+    "show etherchannel {ae} detail",
+    "show lacp interfaces ae{ae}");
+  add("lag-config", "LAG", "cfg", "Build an LACP bundle",
+    "interface {port}\n channel-group {ae} mode active",
+    "set chassis aggregated-devices ethernet device-count {aecount}\nset interfaces {jport} ether-options 802.3ad ae{ae}\nset interfaces ae{ae} aggregated-ether-options lacp active",
+    "Repeat the member line for each port. Junos needs the device-count to be greater than the highest ae number.");
+  add("lag-trunk", "LAG", "cfg", "Make the bundle a trunk",
+    "interface Port-channel{ae}\n switchport mode trunk",
+    "set interfaces ae{ae} unit 0 family ethernet-switching interface-mode trunk\nset interfaces ae{ae} unit 0 family ethernet-switching vlan members {vlanname}");
+  add("lag-fast", "LAG", "cfg", "Fast LACP timers",
+    "interface {port}\n lacp rate fast",
+    "set interfaces ae{ae} aggregated-ether-options lacp periodic fast",
+    "Cisco sets the rate on each member port. Junos sets it on the ae interface.");
+
+  // Neighbors
+  add("nbr-lldp", "Neighbors", "show", "LLDP neighbors",
+    "show lldp neighbors",
+    "show lldp neighbors");
+  add("nbr-detail", "Neighbors", "show", "Neighbor detail on one port",
+    "show lldp neighbors {port} detail",
+    "show lldp neighbors interface {jport}");
+  add("nbr-cdp", "Neighbors", "show", "CDP neighbors",
+    "show cdp neighbors",
+    "show lldp neighbors",
+    "Junos does not run CDP. Use LLDP on both ends so Cisco and Juniper devices see each other.");
+  add("lldp-enable", "Neighbors", "cfg", "Enable LLDP",
+    "lldp run",
+    "set protocols lldp interface all");
+
+  // PoE
+  add("poe-all", "PoE", "show", "PoE status for all ports",
+    "show power inline",
+    "show poe interface");
+  add("poe-port", "PoE", "show", "PoE detail for one port",
+    "show power inline {port} detail",
+    "show poe interface {jport}");
+  add("poe-budget", "PoE", "show", "PoE power budget",
+    "show power inline",
+    "show poe controller",
+    "Cisco prints the budget at the bottom of the same table.");
+  add("poe-disable", "PoE", "cfg", "Turn PoE off or on",
+    "interface {port}\n power inline never\n power inline auto",
+    "set poe interface {jport} disable\ndelete poe interface {jport} disable",
+    "First line of each side turns power off, second line turns it back on.");
+  add("poe-cycle", "PoE", "cfg", "Power-cycle a PoE device",
+    "interface {port}\n power inline never\n power inline auto",
+    "set poe interface {jport} disable\ncommit\ndelete poe interface {jport} disable\ncommit",
+    "Wait a few seconds between the two steps on either platform.");
+
+  // Stacking
+  add("stack-show", "Stacking", "show", "Stack or Virtual Chassis members",
+    "show switch",
+    "show virtual-chassis",
+    "A Junos Virtual Chassis can hold up to 10 EX3400 members.");
+  add("stack-detail", "Stacking", "show", "Member role, priority and state",
+    "show switch detail",
+    "show virtual-chassis status");
+  add("stack-ports", "Stacking", "show", "Stack link health",
+    "show switch stack-ports",
+    "show virtual-chassis vc-port");
+  add("stack-prio", "Stacking", "cfg", "Set master priority",
+    "switch 1 priority 15",
+    "set virtual-chassis member 0 mastership-priority 255",
+    "Cisco priority is 1 to 15. Junos is 0 to 255. Higher wins on both. Junos member IDs start at 0.");
+  add("stack-renum", "Stacking", "cfg", "Renumber a member",
+    "switch 1 renumber 2",
+    "request virtual-chassis renumber member-id 0 new-member-id 1");
+  add("stack-vcport", "Stacking", "cfg", "Create stacking links",
+    "# StackWise-480 uses dedicated stack ports and cables",
+    "request virtual-chassis vc-port set pic-slot 1 port 0",
+    "On EX3400 the 40G QSFP+ uplinks become VC ports. Run it on each member as needed.");
+
+  // System
+  add("sys-version", "System", "show", "Software version",
+    "show version",
+    "show version");
+  add("sys-inventory", "System", "show", "Hardware inventory and serial numbers",
+    "show inventory",
+    "show chassis hardware");
+  add("sys-uptime", "System", "show", "Uptime and current time",
+    "show version | include uptime\nshow clock",
+    "show system uptime");
+  add("sys-cpu", "System", "show", "CPU and memory",
+    "show processes cpu sorted\nshow processes memory sorted",
+    "show chassis routing-engine\nshow system processes extended");
+  add("sys-env", "System", "show", "Temperature, fans and power supplies",
+    "show environment all",
+    "show chassis environment\nshow chassis fan");
+  add("sys-alarms", "System", "show", "Active alarms",
+    "show facility-alarm status",
+    "show chassis alarms\nshow system alarms");
+  add("sys-disk", "System", "show", "Flash and disk usage",
+    "dir flash:",
+    "show system storage");
+  add("sys-tech", "System", "show", "Support bundle for the vendor",
+    "show tech-support",
+    "request support information | save /var/tmp/rsi.txt",
+    "Junos writes the output to a file you can copy off the switch.");
+  add("sys-reboot", "System", "show", "Reboot the switch",
+    "reload",
+    "request system reboot");
+
+  // Logging
+  add("log-show", "Logging", "show", "System log",
+    "show logging",
+    "show log messages",
+    "Junos also keeps show log chassisd and show log interactive-commands.");
+  add("log-port", "Logging", "show", "Log entries for one port",
+    "show logging | include {portlong}",
+    "show log messages | match {jport}");
+  add("log-live", "Logging", "show", "Watch logs live",
+    "terminal monitor",
+    "monitor start messages\nmonitor stop",
+    "On Junos, run monitor stop when finished.");
+  add("log-macflap", "Logging", "show", "MAC flapping and moves",
+    "show logging | include MACFLAP",
+    "show log messages | match L2ALD",
+    "A MAC that keeps moving between ports points to a loop.");
+  add("log-clear", "Logging", "show", "Clear the log",
+    "clear logging",
+    "clear log messages");
+  add("log-host", "Logging", "cfg", "Send logs to a syslog server",
+    "logging host {remote}",
+    "set system syslog host {remote} any any");
+
+  // Config
+  add("cfg-enter", "Config", "cfg", "Enter configuration mode",
+    "configure terminal",
+    "configure",
+    "Junos edits a candidate configuration. Nothing changes until you commit.");
+  add("cfg-run", "Config", "cfg", "Run a show command from config mode",
+    "do show running-config",
+    "run show configuration");
+  add("cfg-show", "Config", "show", "Show the full configuration",
+    "show running-config",
+    "show configuration");
+  add("cfg-set", "Config", "show", "Show configuration as commands",
+    "show running-config",
+    "show configuration | display set",
+    "Display set gives one line per setting, which matches how Cisco output reads.");
+  add("cfg-int", "Config", "show", "Configuration of one port",
+    "show running-config interface {port}",
+    "show configuration interfaces {jport}");
+  add("cfg-save", "Config", "cfg", "Save and apply changes",
+    "write memory",
+    "commit",
+    "Cisco applies changes immediately and saves on request. Junos applies and saves together on commit.");
+  add("cfg-diff", "Config", "cfg", "Review pending changes",
+    "show archive config differences",
+    "show | compare",
+    "On Cisco, archive must be configured first.");
+  add("cfg-check", "Config", "cfg", "Validate without applying",
+    "# no equivalent",
+    "commit check");
+  add("cfg-confirmed", "Config", "cfg", "Safety net for remote changes",
+    "reload in 10\n# reload cancel when the change is confirmed",
+    "commit confirmed 10",
+    "Junos rolls back by itself after 10 minutes unless you run commit again.");
+  add("cfg-rollback", "Config", "cfg", "Undo the last change",
+    "configure replace flash:backup.cfg force",
+    "rollback 1\ncommit",
+    "Junos keeps 50 previous configurations. rollback 0 discards uncommitted edits.");
+  add("cfg-history", "Config", "show", "Change history",
+    "show archive",
+    "show system commit");
+  add("cfg-remove", "Config", "cfg", "Remove a setting",
+    "interface {port}\n no switchport access vlan",
+    "delete interfaces {jport} unit 0 family ethernet-switching vlan members",
+    "Cisco prefixes the original command with no. Junos uses delete on the path.");
+  add("cfg-exit", "Config", "cfg", "Leave configuration mode",
+    "end",
+    "exit configuration-mode");
+
+  // Security
+  add("sec-portsec", "Security", "cfg", "Limit MACs per port",
+    "interface {port}\n switchport port-security\n switchport port-security maximum 1",
+    "set switch-options interface {jport} interface-mac-limit 1");
+  add("sec-dhcp-on", "Security", "cfg", "DHCP snooping",
+    "ip dhcp snooping\nip dhcp snooping vlan {vlan}",
+    "set vlans {vlanname} forwarding-options dhcp-security",
+    "Mark uplinks as trusted after enabling it. Test on a non-production VLAN first.");
+  add("sec-dhcp-show", "Security", "show", "DHCP snooping bindings",
+    "show ip dhcp snooping binding",
+    "show dhcp-security binding");
+  add("sec-acl-show", "Security", "show", "ACL and filter hit counters",
+    "show access-lists",
+    "show firewall");
+  add("sec-storm", "Security", "cfg", "Storm control",
+    "interface {port}\n storm-control broadcast level 1.0",
+    "set forwarding-options storm-control-profiles SC all bandwidth-percentage 1\nset interfaces {jport} unit 0 family ethernet-switching storm-control SC");
+  add("sec-ssh", "Security", "cfg", "Enable SSH",
+    "ip ssh version 2\ncrypto key generate rsa modulus 2048",
+    "set system services ssh",
+    "Junos generates host keys on its own.");
+  add("sec-user", "Security", "cfg", "Local admin user",
+    "username admin privilege 15 secret <password>",
+    "set system login user admin class super-user authentication plain-text-password",
+    "Junos prompts for the password and stores a hash.");
+
+  // Services
+  add("svc-host", "Services", "cfg", "Hostname",
+    "hostname SW-ACCESS-01",
+    "set system host-name SW-ACCESS-01");
+  add("svc-ntp", "Services", "cfg", "NTP server",
+    "ntp server {remote}",
+    "set system ntp server {remote}");
+  add("svc-ntp-show", "Services", "show", "NTP status",
+    "show ntp status\nshow ntp associations",
+    "show ntp associations\nshow ntp status");
+  add("svc-dns", "Services", "cfg", "DNS server",
+    "ip name-server {remote}",
+    "set system name-server {remote}");
+  add("svc-snmp", "Services", "cfg", "SNMP read-only community",
+    "snmp-server community public RO",
+    "set snmp community public authorization read-only");
+  add("svc-span", "Services", "cfg", "Port mirroring",
+    "monitor session 1 source interface {port}\nmonitor session 1 destination interface Gi1/0/48",
+    "set forwarding-options analyzer SPAN input ingress interface {jport}\nset forwarding-options analyzer SPAN input egress interface {jport}\nset forwarding-options analyzer SPAN output interface ge-0/0/47");
+  add("svc-span-show", "Services", "show", "Port mirroring status",
+    "show monitor session 1",
+    "show forwarding-options analyzer");
+
+  // Tools
+  add("tool-ping", "Tools", "show", "Ping",
+    "ping {remote} repeat 5",
+    "ping {remote} count 5",
+    "Junos pings until you press Ctrl+C unless you set a count.");
+  add("tool-ping-src", "Tools", "show", "Ping from a specific source",
+    "ping {remote} source Vlan{vlan}",
+    "ping {remote} source {ip}");
+  add("tool-trace", "Tools", "show", "Traceroute",
+    "traceroute {remote}",
+    "traceroute {remote}");
+  add("tool-include", "Tools", "show", "Filter output: lines containing text",
+    "show running-config | include hostname",
+    "show configuration | match host-name");
+  add("tool-exclude", "Tools", "show", "Filter output: hide lines",
+    "show interfaces status | exclude notconnect",
+    "show interfaces terse | except down");
+  add("tool-begin", "Tools", "show", "Filter output: start at a match",
+    "show running-config | begin interface",
+    "show configuration | find interfaces");
+  add("tool-count", "Tools", "show", "Count matching lines",
+    "show interfaces status | include connected | count",
+    "show interfaces terse | match up | count",
+    "On Cisco, | count is available on IOS-XE 16.x. Junos accepts it on any output.");
+  add("tool-paging", "Tools", "show", "Turn off paging",
+    "terminal length 0",
+    "set cli screen-length 0",
+    "On Junos you can also add | no-more to a single command.");
+
+  /* ---------- troubleshooting playbooks ---------- */
+  const TS = [
+    { id: "link", title: "Port will not come up", sub: "Link down or flapping",
+      intro: "Work from the physical layer upward. Stop at the first step that shows a problem.",
+      steps: [
+        ["if-status", "Is the port admin up and is link up? Look for notconnect or err-disabled on Cisco, and down/down on Junos."],
+        ["if-detail", "Negotiated speed and duplex, last flap time, and any carrier transitions."],
+        ["if-optics", "Rx light level near the receiver limit means a dirty fiber, wrong optic type or a long run."],
+        ["nbr-lldp", "Does the far end see you? A neighbor here means the link is passing frames."],
+        ["log-port", "Look for repeated up/down events and the time they started."]
+      ] },
+    { id: "errors", title: "Slow link or packet loss", sub: "Errors, drops, duplex",
+      intro: "Find out whether the port is taking errors, running at the wrong speed or simply full.",
+      steps: [
+        ["if-status", "Confirm speed and duplex match what the far end expects."],
+        ["if-errors", "CRC, runts and giants point to cable, optic or duplex. Drops with no errors point to congestion."],
+        ["if-clear", "Reset the counters so you can tell whether errors are still happening."],
+        ["if-rate", "Compare live rate with link speed. Sustained near line rate means the link is saturated."],
+        ["if-optics", "Weak optics can pass link but still corrupt frames."]
+      ] },
+    { id: "host", title: "Cannot reach a host", sub: "Trace from MAC to route",
+      intro: "Check Layer 2 learning first, then ARP, then routing.",
+      steps: [
+        ["mac-find", "Is the host's MAC learned, and on which port? No entry means the switch has not seen traffic from it."],
+        ["arp-find", "Does the gateway or switch have an ARP entry for the host? An incomplete entry means no reply."],
+        ["ip-brief", "Is the VLAN interface up with the right address?"],
+        ["route-lookup", "Does a route exist and does it point the right way?"],
+        ["tool-ping", "Test reachability from the switch."],
+        ["tool-trace", "Find where the path stops."]
+      ] },
+    { id: "vlan", title: "VLAN or trunk mismatch", sub: "Wrong VLAN, missing tags",
+      intro: "Confirm the VLAN exists, the port is in it, and both trunk ends agree.",
+      steps: [
+        ["vlan-show", "Is the VLAN defined and active?"],
+        ["vlan-id", "Is the port listed as a member?"],
+        ["vlan-trunk-show", "Compare allowed VLANs and the native VLAN against the other end."],
+        ["mac-vlan", "Are MACs from this VLAN being learned on the expected ports?"],
+        ["stp-ports", "A port in a blocking state in this VLAN will drop its traffic."]
+      ] },
+    { id: "stp", title: "Spanning-tree trouble or loop", sub: "Flapping MACs, high CPU, storms",
+      intro: "Signs include MAC addresses moving between ports, high utilization on many ports at once and slow management access.",
+      steps: [
+        ["stp-bridge", "Which switch is root? An unexpected root is a common cause of odd traffic paths."],
+        ["stp-ports", "Port roles and states. Look for ports that change state repeatedly."],
+        ["stp-blocked", "Where is the tree blocking? A loop with no blocked port means STP is not working."],
+        ["log-macflap", "Repeated MAC moves name the ports involved in the loop."],
+        ["if-rate", "A port carrying line-rate broadcast traffic is likely part of the loop."]
+      ] },
+    { id: "lag", title: "Port-channel or LAG down", sub: "LACP not bundling",
+      intro: "Both ends need the same mode, speed and VLAN settings on every member.",
+      steps: [
+        ["lag-summary", "Is the bundle up and which members are active?"],
+        ["lag-detail", "Is LACP receiving packets from the partner? No partner info means the far end is not sending."],
+        ["if-status", "Check each member for matching speed and duplex."],
+        ["nbr-lldp", "Confirm each member lands on the same far-end switch."]
+      ] },
+    { id: "poe", title: "PoE device will not power on", sub: "Phones, APs, cameras",
+      intro: "Check power budget and port state before blaming the device.",
+      steps: [
+        ["poe-port", "Port power state, class and draw. A fault or deny state names the cause."],
+        ["poe-budget", "Is there power left in the budget for this port?"],
+        ["poe-all", "Compare with neighbouring ports that do work."],
+        ["poe-cycle", "Reboot the device by cycling power on its port."],
+        ["if-status", "A powered device with no link points to cabling or the device itself."]
+      ] },
+    { id: "stack", title: "Stack or Virtual Chassis problem", sub: "Missing member, split stack",
+      intro: "Verify every member is present, healthy and linked.",
+      steps: [
+        ["stack-show", "Are all members listed, and who is the master?"],
+        ["stack-detail", "Member state, priority and role."],
+        ["stack-ports", "A stack or VC link shown down explains a missing member."],
+        ["sys-env", "Check for power or fan problems on a member that dropped out."],
+        ["log-show", "Look for member add and delete events."]
+      ] },
+    { id: "health", title: "Switch health check", sub: "CPU, memory, power, alarms",
+      intro: "A quick pass for a device that feels slow or unstable.",
+      steps: [
+        ["sys-uptime", "A recent uptime means an unexpected reboot."],
+        ["sys-cpu", "Sustained high CPU. Check which process is responsible."],
+        ["sys-env", "Temperature, fans and power supplies."],
+        ["sys-alarms", "Active hardware alarms."],
+        ["sys-disk", "A full flash or disk can stop logging and upgrades."],
+        ["log-show", "Recent errors and warnings."]
+      ] },
+    { id: "change", title: "Make a change safely", sub: "Review, apply, roll back",
+      intro: "Preview what will change, apply it with a way back, then keep or undo it.",
+      steps: [
+        ["cfg-diff", "Review exactly what will change."],
+        ["cfg-check", "Validate the configuration before applying."],
+        ["cfg-confirmed", "Apply with an automatic way back if you lose access."],
+        ["cfg-save", "Keep the change once you confirm everything works."],
+        ["cfg-rollback", "Undo the change if something broke."]
+      ] }
+  ];
+
+  /* ---------- values ---------- */
+  const DEF = { port: "Gi1/0/1", vlan: "10", vlanname: "USERS", ip: "10.10.10.1/24", remote: "10.10.10.254", mac: "00:11:22:33:44:55", ae: "1" };
+  const FIELDS = [
+    { k: "port", label: "Port", wide: true },
+    { k: "vlan", label: "VLAN ID" },
+    { k: "vlanname", label: "VLAN name" },
+    { k: "ip", label: "Switch IP / prefix", wide: true },
+    { k: "remote", label: "Remote IP" },
+    { k: "mac", label: "MAC address", wide: true },
+    { k: "ae", label: "LAG number" }
+  ];
+  const STORE = "cjmap.v1";
+  let state = { dir: "c2j", vals: Object.assign({}, DEF), cat: "All", kind: "all", q: "", tab: "translate", ts: "link" };
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE) || "null");
+    if (s) {
+      if (s.dir === "j2c") state.dir = "j2c";
+      if (s.vals) Object.keys(DEF).forEach(k => { if (typeof s.vals[k] === "string") state.vals[k] = s.vals[k]; });
+    }
+  } catch (e) { /* storage unavailable */ }
+  function save() {
+    try { localStorage.setItem(STORE, JSON.stringify({ dir: state.dir, vals: state.vals })); } catch (e) { /* ignore */ }
+  }
+
+  function parsePort(s) {
+    s = (s || "").trim();
+    let m = /^(gig\w*|gi|ten\w*|te|for\w*|fo)\s*(\d+)\/(\d+)\/(\d+)$/i.exec(s);
+    if (m) {
+      const t = m[1].slice(0, 2).toLowerCase(), f = +m[2], sl = +m[3], p = +m[4];
+      const cport = ({ gi: "Gi", te: "Te", fo: "Fo" })[t] + f + "/" + sl + "/" + p;
+      let jport;
+      if (f < 1) return null;
+      if (sl === 0) jport = "ge-" + (f - 1) + "/0/" + Math.max(p - 1, 0);
+      else if (t === "fo") jport = "et-" + (f - 1) + "/1/" + Math.max(p - 1, 0);
+      else jport = "xe-" + (f - 1) + "/2/" + Math.max(p - 1, 0);
+      return { cport, jport };
+    }
+    m = /^(ge|xe|mge|et)-(\d+)\/(\d+)\/(\d+)$/i.exec(s);
+    if (m) {
+      const t = m[1].toLowerCase(), f = +m[2], sl = +m[3], p = +m[4];
+      let cport;
+      if (t === "ge" || t === "mge") cport = "Gi" + (f + 1) + "/0/" + (p + 1);
+      else if (t === "xe") cport = "Te" + (f + 1) + "/1/" + (p + 1);
+      else cport = "Fo" + (f + 1) + "/1/" + (p + 1);
+      return { cport, jport: t + "-" + f + "/" + sl + "/" + p };
+    }
+    return null;
+  }
+  function longName(c) {
+    return c.replace(/^Gi/, "GigabitEthernet").replace(/^Te/, "TenGigabitEthernet").replace(/^Fo/, "FortyGigabitEthernet");
+  }
+  function maskOf(n) {
+    const b = n === 0 ? 0 : (0xffffffff << (32 - n)) >>> 0;
+    return [b >>> 24, (b >>> 16) & 255, (b >>> 8) & 255, b & 255].join(".");
+  }
+  function validIp(s) {
+    const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(s);
+    return !!m && m.slice(1).every(x => +x <= 255);
+  }
+
+  // Returns {map, bad} where map holds every placeholder value.
+  function derive() {
+    const v = state.vals, bad = {}, map = {};
+    let p = parsePort(v.port);
+    if (!p) { bad.port = true; p = parsePort(DEF.port); }
+    map.port = p.cport; map.jport = p.jport; map.portlong = longName(p.cport);
+
+    const vl = parseInt(v.vlan, 10);
+    if (/^\d+$/.test(v.vlan.trim()) && vl >= 1 && vl <= 4094) map.vlan = String(vl); else { bad.vlan = true; map.vlan = DEF.vlan; }
+    map.vlanname = /^[A-Za-z0-9_-]{1,31}$/.test(v.vlanname.trim()) ? v.vlanname.trim() : (bad.vlanname = true, DEF.vlanname);
+
+    const im = /^([\d.]+)(?:\/(\d{1,2}))?$/.exec(v.ip.trim());
+    if (im && validIp(im[1]) && (im[2] === undefined || +im[2] <= 32)) {
+      map.ip = im[1]; map.prefix = im[2] === undefined ? "24" : im[2];
+    } else { bad.ip = true; map.ip = "10.10.10.1"; map.prefix = "24"; }
+    map.mask = maskOf(+map.prefix);
+
+    if (validIp(v.remote.trim())) map.remote = v.remote.trim(); else { bad.remote = true; map.remote = DEF.remote; }
+
+    const hex = v.mac.toLowerCase().replace(/[^0-9a-f]/g, "");
+    const mh = hex.length === 12 ? hex : DEF.mac.replace(/:/g, "");
+    if (hex.length !== 12) bad.mac = true;
+    map.mac = mh.match(/.{2}/g).join(":");
+    map.maccisco = mh.match(/.{4}/g).join(".");
+
+    const ae = parseInt(v.ae, 10);
+    if (/^\d+$/.test(v.ae.trim()) && ae >= 0 && ae <= 47) map.ae = String(ae); else { bad.ae = true; map.ae = DEF.ae; }
+    map.aecount = String(+map.ae + 1);
+    return { map, bad };
+  }
+
+  /* ---------- rendering helpers ---------- */
+  const $ = s => document.querySelector(s);
+  function esc(s) { return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
+  let D = derive();
+
+  function fill(line, html) {
+    return line.replace(/\{(\w+)\}/g, (m, k) => {
+      if (!(k in D.map)) return m;
+      return html ? '<span class="var">' + esc(D.map[k]) + "</span>" : D.map[k];
+    });
+  }
+  function paneLines(e, side) { return e[side].map(l => fill(l, false)); }
+  function paneHtml(e, side) {
+    return e[side].map(l => {
+      if (l.charAt(0) === "#") return '<span class="cm">' + esc(l) + "</span>";
+      const raw = l.replace(/\{(\w+)\}/g, "\u0001$1\u0002");
+      return esc(raw).replace(/\u0001(\w+)\u0002/g, (m, k) =>
+        (k in D.map) ? '<span class="var">' + esc(D.map[k]) + "</span>" : "{" + k + "}");
+    }).join("\n");
+  }
+  function copyText(e, side) {
+    return paneLines(e, side).filter(l => l.charAt(0) !== "#").join("\n").replace(/^ +/gm, m => m);
+  }
+
+  const PLAT = {
+    cisco: { cls: "cisco", name: "Cisco Catalyst 3850" },
+    junos: { cls: "juniper", name: "Juniper EX3400" }
+  };
+  function pane(e, side) {
+    const p = PLAT[side];
+    const need = side === "junos" && e.kind === "cfg" ? '<span class="need">commit to apply</span>' : "";
+    return '<div class="pane ' + p.cls + '"><div class="pane-head"><span>' + p.name + need +
+      '</span><button class="copy" type="button" data-copy="' + e.id + '" data-side="' + side + '">Copy</button></div>' +
+      "<pre>" + paneHtml(e, side) + "</pre></div>";
+  }
+  function row(e, opts) {
+    opts = opts || {};
+    const order = state.dir === "c2j" ? ["cisco", "junos"] : ["junos", "cisco"];
+    const tags = (opts.cat === false ? "" : '<span class="tag">' + esc(e.cat) + "</span>") +
+      '<span class="tag' + (e.kind === "cfg" ? " cfg" : "") + '">' + (e.kind === "cfg" ? "Configure" : "Show") + "</span>";
+    return '<article class="row" id="e-' + e.id + '"><div class="row-head"><h3>' + esc(e.title) + "</h3>" + tags + "</div>" +
+      '<div class="panes">' + pane(e, order[0]) + pane(e, order[1]) + "</div>" +
+      (e.note ? '<p class="note">' + esc(e.note) + "</p>" : "") + "</article>";
+  }
+
+  /* ---------- search ---------- */
+  function words(s) { return s.toLowerCase().match(/[a-z0-9]+/g) || []; }
+  const INDEX = E.map(e => {
+    const cmds = e.cisco.concat(e.junos).filter(l => l.charAt(0) !== "#").map(l => l.toLowerCase().replace(/\{\w+\}/g, " ").replace(/\s+/g, " ").trim());
+    const kindWord = e.kind === "cfg" ? "configure config set" : "show display";
+    return {
+      e, title: words(e.title), tw: words(e.title).concat(words(e.cat)), cmds,
+      cw: words(cmds.join(" ")), hay: (e.title + " " + e.cat + " " + kindWord + " " + cmds.join(" ") + " " + e.note).toLowerCase(),
+      hw: words(e.title + " " + e.cat + " " + kindWord + " " + cmds.join(" ") + " " + e.note)
+    };
+  });
+  function search(q) {
+    q = q.toLowerCase().replace(/\s+/g, " ").trim();
+    const whole = q.replace(/^[\w@.-]+[#>]\s*/, "");
+    const toks = q.split(" ").filter(Boolean);
+    const out = [];
+    INDEX.forEach((it, i) => {
+      if (state.cat !== "All" && it.e.cat !== state.cat) return;
+      if (state.kind !== "all" && it.e.kind !== state.kind) return;
+      let score = 0;
+      if (toks.length) {
+        for (const t of toks) {
+          let s = 0;
+          if (it.tw.some(w => w.startsWith(t))) s = 3;
+          else if (it.cw.some(w => w.startsWith(t))) s = 2;
+          else if (it.hw.some(w => w.startsWith(t)) || it.hay.indexOf(t) >= 0) s = 1;
+          if (!s) return;
+          score += s;
+        }
+        if (whole.length > 2 && it.cmds.some(c => c.indexOf(whole) >= 0)) score += 20;
+        if (whole.length > 2 && it.cmds.some(c => c === whole)) score += 20;
+      }
+      out.push({ it, score, i });
+    });
+    if (toks.length) out.sort((a, b) => b.score - a.score || a.i - b.i);
+    return out.map(o => o.it.e);
+  }
+
+  /* ---------- views ---------- */
+  const CATS = ["All"].concat(E.reduce((a, e) => (a.indexOf(e.cat) < 0 && a.push(e.cat), a), []));
+
+  function renderFilters() {
+    let h = CATS.map(c => '<button type="button" class="chip" data-cat="' + esc(c) + '" aria-pressed="' + (state.cat === c) + '">' + esc(c) + "</button>").join("");
+    h += '<span class="sep"></span>' + [["all", "All types"], ["show", "Show"], ["cfg", "Configure"]]
+      .map(k => '<button type="button" class="chip" data-kind="' + k[0] + '" aria-pressed="' + (state.kind === k[0]) + '">' + k[1] + "</button>").join("");
+    $("#filters").innerHTML = h;
+  }
+  function renderResults() {
+    const list = search(state.q);
+    $("#count").textContent = list.length + (list.length === 1 ? " command" : " commands") + (state.q ? " match" : "");
+    if (!list.length) {
+      $("#results").innerHTML = '<div class="empty">Nothing matches “' + esc(state.q) + '”. Try fewer words, or clear the filters.</div>';
+      return;
+    }
+    let h = "";
+    if (state.q) h = list.map(e => row(e)).join("");
+    else {
+      let last = "";
+      list.forEach(e => {
+        if (e.cat !== last) { h += '<div class="group-title">' + esc(e.cat) + "</div>"; last = e.cat; }
+        h += row(e, { cat: false });
+      });
+    }
+    $("#results").innerHTML = h;
+  }
+  function renderTS() {
+    $("#ts-list").innerHTML = TS.map(t => '<button type="button" class="ts-btn" data-ts="' + t.id + '" aria-current="' + (state.ts === t.id) + '">' +
+      esc(t.title) + "<small>" + esc(t.sub) + "</small></button>").join("");
+    const t = TS.find(x => x.id === state.ts) || TS[0];
+    let h = '<h2 class="ts-title">' + esc(t.title) + '</h2><p class="ts-intro">' + esc(t.intro) + "</p>";
+    t.steps.forEach((s, i) => {
+      const e = E.find(x => x.id === s[0]);
+      if (!e) return;
+      h += '<div class="step"><div class="step-n">' + (i + 1) + "</div><div>" + row(e, { cat: false }).replace('<p class="note">', '<p class="note" hidden>') +
+        '<p class="look"><b>Look for:</b> ' + esc(s[1]) + "</p></div></div>";
+    });
+    $("#ts-body").innerHTML = h;
+  }
+  function renderFields() {
+    $("#fields").innerHTML = FIELDS.map(f => {
+      return '<div class="field' + (f.wide ? " wide" : "") + '"><label for="f-' + f.k + '">' + f.label + '</label><input id="f-' + f.k + '" data-k="' + f.k +
+        '" value="' + esc(state.vals[f.k]) + '" autocomplete="off" spellcheck="false"><div class="sub" id="s-' + f.k + '"></div></div>';
+    }).join("");
+    updateSubs();
+  }
+  function updateSubs() {
+    const m = D.map;
+    const subs = {
+      port: D.bad.port ? "Use Gi1/0/1 or ge-0/0/0" : m.port + "  ⇄  " + m.jport,
+      vlan: D.bad.vlan ? "Enter 1 to 4094" : "",
+      vlanname: D.bad.vlanname ? "Letters, digits, - and _" : "",
+      ip: D.bad.ip ? "Use 10.10.10.1/24" : "mask " + m.mask,
+      remote: D.bad.remote ? "Enter an IPv4 address" : "",
+      mac: D.bad.mac ? "Need 12 hex digits" : m.maccisco,
+      ae: D.bad.ae ? "Enter 0 to 47" : "Po" + m.ae + "  ⇄  ae" + m.ae
+    };
+    FIELDS.forEach(f => {
+      const s = $("#s-" + f.k), i = $("#f-" + f.k);
+      if (!s || !i) return;
+      s.textContent = subs[f.k]; s.className = "sub" + (D.bad[f.k] ? " bad" : "");
+      i.setAttribute("aria-invalid", D.bad[f.k] ? "true" : "false");
+    });
+  }
+  function renderSwap() {
+    const l = state.dir === "c2j" ? ["Cisco 3850", "c"] : ["Juniper EX3400", "j"];
+    const r = state.dir === "c2j" ? ["Juniper EX3400", "j"] : ["Cisco 3850", "c"];
+    $("#swap-l").textContent = l[0]; $("#swap-l").className = l[1];
+    $("#swap-r").textContent = r[0]; $("#swap-r").className = r[1];
+    $("#q").placeholder = (state.dir === "c2j" ? "Paste a Cisco command" : "Paste a Junos command") +
+      " or describe the task: mac address-table, trunk, bpdu guard, poe…";
+  }
+  function renderAll() {
+    renderSwap();
+    if (state.tab === "translate") renderResults(); else renderTS();
+  }
+  function setTab(t) {
+    state.tab = t;
+    $("#view-translate").hidden = t !== "translate";
+    $("#view-ts").hidden = t !== "ts";
+    document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === t)));
+    renderAll();
+  }
+
+  /* ---------- events ---------- */
+  document.addEventListener("click", ev => {
+    const t = ev.target.closest("button");
+    if (!t) return;
+    if (t.dataset.tab) return setTab(t.dataset.tab);
+    if (t.id === "swap") { state.dir = state.dir === "c2j" ? "j2c" : "c2j"; save(); return renderAll(); }
+    if (t.id === "reset") {
+      state.vals = Object.assign({}, DEF); save(); D = derive();
+      renderFields(); return renderAll();
+    }
+    if (t.dataset.cat) { state.cat = t.dataset.cat; renderFilters(); return renderResults(); }
+    if (t.dataset.kind) { state.kind = t.dataset.kind; renderFilters(); return renderResults(); }
+    if (t.dataset.ts) { state.ts = t.dataset.ts; renderTS(); return window.scrollTo({ top: 0 }); }
+    if (t.dataset.copy) {
+      const e = E.find(x => x.id === t.dataset.copy);
+      const text = copyText(e, t.dataset.side);
+      const done = () => { t.textContent = "Copied"; setTimeout(() => { t.textContent = "Copy"; }, 1200); };
+      const fallback = () => {
+        const ta = document.createElement("textarea");
+        ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); done(); } catch (x) { t.textContent = "Select text"; }
+        document.body.removeChild(ta);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+      else fallback();
+    }
+  });
+  $("#fields").addEventListener("input", ev => {
+    const k = ev.target.dataset.k;
+    if (!k) return;
+    state.vals[k] = ev.target.value; save(); D = derive(); updateSubs();
+    if (state.tab === "translate") {
+      const y = window.scrollY; renderResults(); window.scrollTo({ top: y });
+    } else renderTS();
+  });
+  $("#q").addEventListener("input", ev => { state.q = ev.target.value; renderResults(); });
+  document.addEventListener("keydown", ev => {
+    if (ev.key === "/" && !/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) {
+      ev.preventDefault(); setTab("translate"); $("#q").focus();
+    }
+  });
+
+  renderFields(); renderFilters(); renderAll();
+})();
+</script>
+</body>
+</html>
