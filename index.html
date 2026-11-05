@@ -276,10 +276,14 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
   }
 
   // Interfaces
-  add("if-status", "Interfaces", "show", "Interface status summary",
-    "show interfaces status",
+  add("ip-brief", "Interfaces", "show", "Interface summary: state and IP address",
+    "show ip interface brief",
     "show interfaces terse",
-    "Junos terse shows admin and link state only. Add | match ge- to limit output to access ports. Use show ethernet-switching interface for VLAN membership.");
+    "Closest match between the two. Both list each interface with admin state and link state. On Nexus, show interface brief gives the port summary and show ip interface brief adds the IP addresses. Add | match inet on Junos to show only interfaces with an IP address.");
+  add("if-status", "Interfaces", "show", "Port status: speed, duplex and VLAN",
+    "show interfaces status",
+    "show interfaces brief\nshow ethernet-switching interface",
+    "Cisco puts link state, VLAN, speed and duplex in one table. On Junos, interfaces brief gives link, speed and duplex, and ethernet-switching interface gives VLAN membership. For a quick up/down list, use the entry above.");
   add("if-detail", "Interfaces", "show", "Interface detail and counters",
     "show interfaces {port}",
     "show interfaces {jport} extensive",
@@ -352,9 +356,6 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
     "Cisco calls it an SVI. Junos calls it an IRB interface bound to the VLAN.");
 
   // Routing
-  add("ip-brief", "Routing", "show", "IP addresses on interfaces",
-    "show ip interface brief",
-    "show interfaces terse | match inet");
   add("route-table", "Routing", "show", "Routing table",
     "show ip route",
     "show route");
@@ -713,6 +714,7 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
     "set protocols iccp local-ip-addr {ip}\nset protocols iccp peer {remote} redundancy-group-id-list 1",
     "Skeleton only. The peer link and each member bundle need more settings. Follow the vendor guide for your release.");
 
+  V("ip-brief", { nxos: "show interface brief\nshow ip interface brief" });
   V("if-status", { nxos: "show interface status" });
   V("if-detail", { nxos: "show interface {port}" });
   V("if-errors", { nxos: "show interface {port} counters errors" });
@@ -776,7 +778,8 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
     { id: "link", title: "Port will not come up", sub: "Link down or flapping",
       intro: "Work from the physical layer upward. Stop at the first step that shows a problem.",
       steps: [
-        ["if-status", "Is the port admin up and is link up? Look for notconnect or err-disabled on Cisco, and down/down on Junos."],
+        ["ip-brief", "Quick view: is the port admin up and is link up? Look for down/down on both platforms."],
+        ["if-status", "Cisco shows notconnect or err-disabled here. On Junos, check link, speed and VLAN membership."],
         ["if-detail", "Negotiated speed and duplex, last flap time, and any carrier transitions."],
         ["if-optics", "Rx light level near the receiver limit means a dirty fiber, wrong optic type or a long run."],
         ["nbr-lldp", "Does the far end see you? A neighbor here means the link is passing frames."],
