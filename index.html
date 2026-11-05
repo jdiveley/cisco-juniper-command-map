@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Translate commands between Cisco Catalyst 3850 and Juniper EX3400 switches, with troubleshooting playbooks.">
-<title>Catalyst to EX Command Map</title>
+<meta name="description" content="Translate commands between Cisco Catalyst and Nexus switches and Juniper EX and QFX switches, with troubleshooting playbooks.">
+<title>Cisco-Juniper Switch Command Map</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -104,14 +104,16 @@ body::before {
 .tabs { display: flex; gap: 2px; background: var(--soft); padding: 3px; border-radius: 8px; }
 .tab { border: 0; background: transparent; padding: 6px 14px; border-radius: 6px; color: var(--muted); font-weight: 500; }
 .tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
-.swap {
-  display: flex; align-items: center; gap: 10px;
-  border: 1px solid var(--line); background: var(--surface);
-  border-radius: 8px; padding: 6px 10px; font-weight: 500;
+.plats { display: flex; align-items: center; gap: 8px; }
+.plat { display: flex; flex-direction: column; font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.plat select {
+  margin-top: 1px; background: var(--surface); border: 1px solid var(--line); border-radius: 7px;
+  padding: 5px 8px; font-size: 13.5px; font-weight: 500; letter-spacing: 0; text-transform: none; max-width: 100%;
 }
-.swap:hover { border-color: var(--muted); }
-.swap .c { color: var(--cisco); } .swap .j { color: var(--juniper); }
-.swap svg { width: 18px; height: 18px; stroke: var(--muted); fill: none; stroke-width: 1.8; }
+.plat-c select { color: var(--cisco); } .plat-j select { color: var(--juniper); }
+.swapbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 6px; display: grid; place-items: center; align-self: flex-end; }
+.swapbtn:hover { border-color: var(--muted); }
+.swapbtn svg { width: 18px; height: 18px; stroke: var(--muted); fill: none; stroke-width: 1.8; }
 
 /* variables */
 .vars { padding-block: 14px 4px; }
@@ -207,16 +209,18 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
 
 <div class="wrap">
   <header class="bar">
-    <div class="brand">Catalyst ⇄ EX command map<small>Cisco Catalyst 3850 (IOS-XE) and Juniper EX3400 (Junos ELS)</small></div>
+    <div class="brand">Cisco ⇄ Juniper command map<small>Catalyst and Nexus to EX and QFX</small></div>
     <div class="tabs" role="tablist" aria-label="View">
       <button class="tab" role="tab" id="tab-translate" aria-selected="true" data-tab="translate">Translate</button>
       <button class="tab" role="tab" id="tab-ts" aria-selected="false" data-tab="ts">Troubleshoot</button>
     </div>
-    <button class="swap" id="swap" title="Swap which platform is on the left">
-      <span id="swap-l" class="c">Cisco 3850</span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h14m0 0-4-4m4 4-4 4M20 16H6m0 0 4-4m-4 4 4 4"/></svg>
-      <span id="swap-r" class="j">Juniper EX3400</span>
-    </button>
+    <div class="plats" role="group" aria-label="Platforms">
+      <label class="plat plat-c" id="plat-c"><span>Cisco</span><select id="sel-cisco" aria-label="Cisco model"></select></label>
+      <button class="swapbtn" id="swap" type="button" title="Swap sides" aria-label="Swap sides">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h14m0 0-4-4m4 4-4 4M20 16H6m0 0 4-4m-4 4 4 4"/></svg>
+      </button>
+      <label class="plat plat-j" id="plat-j"><span>Juniper</span><select id="sel-junos" aria-label="Juniper model"></select></label>
+    </div>
   </header>
 
   <section class="vars" aria-label="Values used in commands">
@@ -247,7 +251,7 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
   </main>
 
   <footer>
-    Commands target IOS-XE 16.x on the 3850 and Junos ELS 18.x or later on the EX3400. Junos configuration lines are entered after <code>configure</code> and take effect on <code>commit</code>. Check syntax against your software release before using it on production gear.
+    Catalyst 3850, 9300, 9400 and 9500 use IOS-XE 16.x or 17.x. Nexus 5548, 7009 and 9300 use NX-OS. Juniper EX and QFX switches use Junos ELS. The model you pick sets port names and which commands apply (for example PoE, stacking and vPC). Junos configuration lines are entered after <code>configure</code> and take effect on <code>commit</code>. Check syntax against your software release before using it on production gear.
   </footer>
 </div>
 
@@ -258,7 +262,17 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
   /* ---------- command database ---------- */
   const E = [];
   function add(id, cat, kind, title, cisco, junos, note) {
-    E.push({ id, cat, kind, title, cisco: cisco.split("\n"), junos: junos.split("\n"), note: note || "" });
+    E.push({ id, cat, kind, title, cisco: cisco.split("\n"), junos: junos.split("\n"), note: note || "", v: {}, req: null });
+  }
+  // Platform-specific Cisco lines: keys are nxos, n7k (Nexus 7000 only), svl (StackWise Virtual).
+  function V(id, obj) {
+    const e = E.find(x => x.id === id);
+    if (!e) throw new Error("V: unknown " + id);
+    Object.keys(obj).forEach(k => { e.v[k] = obj[k].split("\n"); });
+  }
+  // Capability a platform must have: poe, stack, vpc.
+  function R(ids, cap) {
+    ids.forEach(id => { const e = E.find(x => x.id === id); if (!e) throw new Error("R: unknown " + id); e.req = cap; });
   }
 
   // Interfaces
@@ -304,7 +318,7 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
   add("if-mtu", "Interfaces", "cfg", "Jumbo frames",
     "system mtu 9198\n# reload required on the 3850",
     "set interfaces {jport} mtu 9216",
-    "The Catalyst setting is global. On Junos, set the MTU per interface.");
+    "The Catalyst setting is global. On Junos, set the MTU per interface. Nexus 5500 also needs a network-qos policy for jumbo frames.");
 
   // VLANs
   add("vlan-show", "VLANs", "show", "List VLANs and member ports",
@@ -681,6 +695,82 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
     "set cli screen-length 0",
     "On Junos you can also add | no-more to a single command.");
 
+
+  add("sys-module", "System", "show", "Modules and line cards",
+    "show module",
+    "show chassis fpc pic-status",
+    "Fixed switches show their members under show switch or show virtual-chassis instead.");
+  add("vpc-status", "vPC / MC-LAG", "show", "Pair and member status",
+    "show vpc brief",
+    "show interfaces mc-ae",
+    "Nexus vPC and Junos MC-LAG solve the same problem but do not interoperate with each other.");
+  add("vpc-peer", "vPC / MC-LAG", "show", "Peer link and keepalive",
+    "show vpc peer-keepalive",
+    "show iccp",
+    "Junos uses ICCP between the two peers.");
+  add("vpc-config", "vPC / MC-LAG", "cfg", "Start a peer pair",
+    "feature vpc\nfeature lacp\nvpc domain 1\n peer-keepalive destination {remote}",
+    "set protocols iccp local-ip-addr {ip}\nset protocols iccp peer {remote} redundancy-group-id-list 1",
+    "Skeleton only. The peer link and each member bundle need more settings. Follow the vendor guide for your release.");
+
+  V("if-status", { nxos: "show interface status" });
+  V("if-detail", { nxos: "show interface {port}" });
+  V("if-errors", { nxos: "show interface {port} counters errors" });
+  V("if-rate", { nxos: "show interface {port} | include rate" });
+  V("if-clear", { nxos: "clear counters interface {port}" });
+  V("if-optics", { nxos: "show interface {port} transceiver details" });
+  V("if-range", { nxos: "interface {port}-12\n switchport mode access\n switchport access vlan {vlan}" });
+  V("if-mtu", { nxos: "interface {port}\n mtu 9216", n7k: "system jumbomtu 9216\ninterface {port}\n mtu 9216" });
+  V("vlan-trunk-show", { nxos: "show interface trunk" });
+  V("vlan-access", { n7k: "interface {port}\n switchport\n switchport mode access\n switchport access vlan {vlan}" });
+  V("vlan-trunk", { n7k: "interface {port}\n switchport\n switchport mode trunk\n switchport trunk allowed vlan {vlan}" });
+  V("vlan-svi", { nxos: "feature interface-vlan\ninterface Vlan{vlan}\n ip address {ip}/{prefix}\n no shutdown" });
+  V("ospf-nbr", { nxos: "show ip ospf neighbors" });
+  V("vrrp", { nxos: "show hsrp brief\nshow vrrp" });
+  V("route-enable", { nxos: "feature ospf\nfeature bgp\n# enable only the protocols you use" });
+  V("route-routed-port", { nxos: "interface {port}\n no switchport\n ip address {ip}/{prefix}" });
+  V("route-default", { nxos: "ip route 0.0.0.0/0 {remote}" });
+  V("dhcp-relay", { nxos: "feature dhcp\nip dhcp relay\ninterface Vlan{vlan}\n ip dhcp relay address {remote}" });
+  V("arp-clear", { nxos: "clear ip arp" });
+  V("stp-edge", { nxos: "interface {port}\n spanning-tree port type edge\n spanning-tree bpduguard enable" });
+  V("lag-summary", { nxos: "show port-channel summary" });
+  V("lag-detail", { nxos: "show port-channel database interface port-channel{ae}\nshow lacp neighbor interface port-channel{ae}" });
+  V("lag-config", { nxos: "feature lacp\ninterface {port}\n channel-group {ae} mode active" });
+  V("nbr-detail", { nxos: "show lldp neighbors interface {port} detail" });
+  V("lldp-enable", { nxos: "feature lldp" });
+  V("sys-uptime", { nxos: "show system uptime" });
+  V("sys-cpu", { nxos: "show processes cpu sort\nshow system resources" });
+  V("sys-env", { nxos: "show environment" });
+  V("sys-alarms", { nxos: "show environment power\nshow environment fan" });
+  V("sys-disk", { nxos: "dir bootflash:" });
+  V("log-show", { nxos: "show logging logfile" });
+  V("log-port", { nxos: "show logging logfile | include {port}" });
+  V("log-macflap", { nxos: "show logging logfile | include MAC_MOVE" });
+  V("log-clear", { nxos: "clear logging logfile" });
+  V("log-host", { nxos: "logging server {remote}" });
+  V("cfg-save", { nxos: "copy running-config startup-config" });
+  V("cfg-diff", { nxos: "show running-config diff" });
+  V("cfg-check", { nxos: "configure session CHG\n ...changes...\n verify\n commit" });
+  V("cfg-confirmed", { nxos: "checkpoint BEFORE-CHANGE\n# apply the change, then roll back if it fails" });
+  V("cfg-rollback", { nxos: "rollback running-config checkpoint BEFORE-CHANGE" });
+  V("cfg-history", { nxos: "show checkpoint summary" });
+  V("sec-portsec", { nxos: "feature port-security\ninterface {port}\n switchport port-security\n switchport port-security maximum 1" });
+  V("sec-dhcp-on", { nxos: "feature dhcp\nip dhcp snooping\nip dhcp snooping vlan {vlan}" });
+  V("sec-acl-show", { nxos: "show ip access-lists" });
+  V("sec-ssh", { nxos: "feature ssh\nssh key rsa 2048" });
+  V("sec-user", { nxos: "username admin password <password> role network-admin" });
+  V("svc-ntp-show", { nxos: "show ntp peer-status" });
+  V("svc-span", { nxos: "interface Ethernet1/48\n switchport monitor\nmonitor session 1\n source interface {port} both\n destination interface Ethernet1/48\n no shut" });
+  V("tool-ping", { nxos: "ping {remote} count 5" });
+  V("tool-ping-src", { nxos: "ping {remote} source {ip}" });
+  V("stack-show", { svl: "show stackwise-virtual" });
+  V("stack-detail", { svl: "show stackwise-virtual neighbors" });
+  V("stack-ports", { svl: "show stackwise-virtual link" });
+  V("stack-vcport", { svl: "stackwise-virtual\n domain 1\ninterface {port}\n stackwise-virtual link 1" });
+  R(["poe-all", "poe-port", "poe-budget", "poe-disable", "poe-cycle"], "poe");
+  R(["stack-show", "stack-detail", "stack-ports", "stack-prio", "stack-renum", "stack-vcport"], "stack");
+  R(["vpc-status", "vpc-peer", "vpc-config"], "vpc");
+
   /* ---------- troubleshooting playbooks ---------- */
   const TS = [
     { id: "link", title: "Port will not come up", sub: "Link down or flapping",
@@ -765,6 +855,14 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
         ["sys-disk", "A full flash or disk can stop logging and upgrades."],
         ["log-show", "Recent errors and warnings."]
       ] },
+    { id: "vpc", title: "vPC or MC-LAG problem", sub: "Nexus pair or Junos MC-LAG",
+      intro: "Check the pair relationship first, then the member bundles.",
+      steps: [
+        ["vpc-status", "Is the pair formed, and are the member bundles up on both peers?"],
+        ["vpc-peer", "A failed keepalive or peer link explains a split pair."],
+        ["lag-summary", "Member bundles that are down or suspended."],
+        ["stp-bridge", "Both peers should agree on the root bridge."]
+      ] },
     { id: "change", title: "Make a change safely", sub: "Review, apply, roll back",
       intro: "Preview what will change, apply it with a way back, then keep or undo it.",
       steps: [
@@ -787,45 +885,83 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
     { k: "mac", label: "MAC address", wide: true },
     { k: "ae", label: "LAG number" }
   ];
-  const STORE = "cjmap.v1";
-  let state = { dir: "c2j", vals: Object.assign({}, DEF), cat: "All", kind: "all", q: "", tab: "translate", ts: "link" };
+  /* ---------- platforms ---------- */
+  const CISCO = [
+    { id: "c3850", name: "Catalyst 3850", grp: "Catalyst (IOS-XE)", os: "IOS-XE", fam: "cat", keys: [], poe: true, stack: true },
+    { id: "c9300", name: "Catalyst 9300", grp: "Catalyst (IOS-XE)", os: "IOS-XE", fam: "cat", keys: [], poe: true, stack: true },
+    { id: "c9400", name: "Catalyst 9400", grp: "Catalyst (IOS-XE)", os: "IOS-XE", fam: "cat", keys: ["svl"], poe: true },
+    { id: "c9500", name: "Catalyst 9500", grp: "Catalyst (IOS-XE)", os: "IOS-XE", fam: "cat", keys: ["svl"] },
+    { id: "n5548", name: "Nexus 5548", grp: "Nexus (NX-OS)", os: "NX-OS", fam: "nx", keys: ["nxos"], vpc: true },
+    { id: "n7009", name: "Nexus 7009", grp: "Nexus (NX-OS)", os: "NX-OS", fam: "nx", keys: ["n7k", "nxos"], vpc: true },
+    { id: "n9300", name: "Nexus 9300", grp: "Nexus (NX-OS)", os: "NX-OS", fam: "nx", keys: ["nxos"], vpc: true }
+  ];
+  // up: PIC slot used for 1G, 10G and 40/100G uplinks. dc: every port is on PIC 0.
+  const JUNIPER = [
+    { id: "ex2300", name: "EX2300", grp: "EX (campus)", poe: true, stack: true, up: { g: 1, x: 1, q: 1 }, g1: "ge" },
+    { id: "ex3400", name: "EX3400", grp: "EX (campus)", poe: true, stack: true, up: { g: 2, x: 2, q: 1 }, g1: "xe" },
+    { id: "ex4300", name: "EX4300", grp: "EX (campus)", poe: true, stack: true, vpc: true, up: { g: 1, x: 1, q: 2 }, g1: "xe" },
+    { id: "ex4400", name: "EX4400", grp: "EX (campus)", poe: true, stack: true, vpc: true, up: { g: 2, x: 2, q: 1 }, g1: "xe" },
+    { id: "ex4650", name: "EX4650", grp: "EX (aggregation and core)", stack: true, vpc: true, dc: true },
+    { id: "ex9200", name: "EX9200", grp: "EX (aggregation and core)", vpc: true, dc: true, lo: "ge" },
+    { id: "qfx5100", name: "QFX5100", grp: "QFX (data center)", stack: true, vpc: true, dc: true },
+    { id: "qfx5120", name: "QFX5120", grp: "QFX (data center)", stack: true, vpc: true, dc: true },
+    { id: "qfx10002", name: "QFX10002", grp: "QFX (data center)", vpc: true, dc: true }
+  ];
+  const STORE = "cjmap.v2";
+  let state = { dir: "c2j", cm: "c3850", jm: "ex3400", vals: Object.assign({}, DEF), cat: "All", kind: "all", q: "", tab: "translate", ts: "link" };
   try {
     const s = JSON.parse(localStorage.getItem(STORE) || "null");
     if (s) {
       if (s.dir === "j2c") state.dir = "j2c";
+      if (CISCO.some(m => m.id === s.cm)) state.cm = s.cm;
+      if (JUNIPER.some(m => m.id === s.jm)) state.jm = s.jm;
       if (s.vals) Object.keys(DEF).forEach(k => { if (typeof s.vals[k] === "string") state.vals[k] = s.vals[k]; });
     }
   } catch (e) { /* storage unavailable */ }
   function save() {
-    try { localStorage.setItem(STORE, JSON.stringify({ dir: state.dir, vals: state.vals })); } catch (e) { /* ignore */ }
+    try { localStorage.setItem(STORE, JSON.stringify({ dir: state.dir, cm: state.cm, jm: state.jm, vals: state.vals })); } catch (e) { /* ignore */ }
   }
+  const curCisco = () => CISCO.find(m => m.id === state.cm) || CISCO[0];
+  const curJunos = () => JUNIPER.find(m => m.id === state.jm) || JUNIPER[0];
 
-  function parsePort(s) {
+  /* A port is held as {m: member/slot (0-based), s: 0 fixed or 1 uplink, n: port (0-based), spd: Gb/s}. */
+  const SPD_PFX = { 1: "Gi", 10: "Te", 25: "Twe", 40: "Fo", 100: "Hu" };
+  const LONG = { Gi: "GigabitEthernet", Te: "TenGigabitEthernet", Twe: "TwentyFiveGigE", Fo: "FortyGigabitEthernet", Hu: "HundredGigE" };
+  function parseAny(s) {
     s = (s || "").trim();
-    let m = /^(gig\w*|gi|ten\w*|te|for\w*|fo)\s*(\d+)\/(\d+)\/(\d+)$/i.exec(s);
+    let m = /^(gi|te|tw|fo|hu)[a-z]*\s*(\d+)\/(\d+)\/(\d+)$/i.exec(s);
     if (m) {
-      const t = m[1].slice(0, 2).toLowerCase(), f = +m[2], sl = +m[3], p = +m[4];
-      const cport = ({ gi: "Gi", te: "Te", fo: "Fo" })[t] + f + "/" + sl + "/" + p;
-      let jport;
-      if (f < 1) return null;
-      if (sl === 0) jport = "ge-" + (f - 1) + "/0/" + Math.max(p - 1, 0);
-      else if (t === "fo") jport = "et-" + (f - 1) + "/1/" + Math.max(p - 1, 0);
-      else jport = "xe-" + (f - 1) + "/2/" + Math.max(p - 1, 0);
-      return { cport, jport };
+      if (+m[2] < 1 || +m[4] < 1) return null;
+      return { m: +m[2] - 1, s: +m[3] > 0 ? 1 : 0, n: +m[4] - 1, spd: { gi: 1, te: 10, tw: 25, fo: 40, hu: 100 }[m[1].toLowerCase()] };
     }
-    m = /^(ge|xe|mge|et)-(\d+)\/(\d+)\/(\d+)$/i.exec(s);
+    m = /^eth(?:ernet)?\s*(\d+)\/(\d+)$/i.exec(s);
     if (m) {
-      const t = m[1].toLowerCase(), f = +m[2], sl = +m[3], p = +m[4];
-      let cport;
-      if (t === "ge" || t === "mge") cport = "Gi" + (f + 1) + "/0/" + (p + 1);
-      else if (t === "xe") cport = "Te" + (f + 1) + "/1/" + (p + 1);
-      else cport = "Fo" + (f + 1) + "/1/" + (p + 1);
-      return { cport, jport: t + "-" + f + "/" + sl + "/" + p };
+      if (+m[1] < 1 || +m[2] < 1) return null;
+      return { m: +m[1] - 1, s: 0, n: +m[2] - 1 };
+    }
+    m = /^(ge|mge|xe|et)-(\d+)\/(\d+)\/(\d+)$/i.exec(s);
+    if (m) {
+      const t = m[1].toLowerCase();
+      return { m: +m[2], s: +m[3] > 0 ? 1 : 0, n: +m[4], spd: t === "xe" ? 10 : t === "et" ? 40 : 1 };
     }
     return null;
   }
-  function longName(c) {
-    return c.replace(/^Gi/, "GigabitEthernet").replace(/^Te/, "TenGigabitEthernet").replace(/^Fo/, "FortyGigabitEthernet");
+  function fmtCisco(c, model) {
+    if (model.fam === "nx") return "Ethernet" + (c.m + 1) + "/" + (c.n + 1);
+    return SPD_PFX[c.spd || 1] + (c.m + 1) + "/" + (c.s > 0 ? 1 : 0) + "/" + (c.n + 1);
+  }
+  function fmtJunos(c, model) {
+    const spd = c.spd;
+    if (model.dc) {
+      const t = spd === undefined ? "xe" : spd >= 25 ? "et" : spd >= 10 ? "xe" : (model.lo || "xe");
+      return t + "-" + c.m + "/0/" + c.n;
+    }
+    if (c.s === 0) {
+      const t = spd === undefined || spd <= 1 ? "ge" : spd <= 10 ? "xe" : "et";
+      return t + "-" + c.m + "/0/" + c.n;
+    }
+    const q = spd >= 40, x = spd >= 10;
+    return (q ? "et" : x ? "xe" : model.g1) + "-" + c.m + "/" + (q ? model.up.q : x ? model.up.x : model.up.g) + "/" + c.n;
   }
   function maskOf(n) {
     const b = n === 0 ? 0 : (0xffffffff << (32 - n)) >>> 0;
@@ -839,9 +975,10 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
   // Returns {map, bad} where map holds every placeholder value.
   function derive() {
     const v = state.vals, bad = {}, map = {};
-    let p = parsePort(v.port);
-    if (!p) { bad.port = true; p = parsePort(DEF.port); }
-    map.port = p.cport; map.jport = p.jport; map.portlong = longName(p.cport);
+    let p = parseAny(v.port);
+    if (!p) { bad.port = true; p = parseAny(DEF.port); }
+    map.port = fmtCisco(p, curCisco()); map.jport = fmtJunos(p, curJunos());
+    map.portlong = map.port.replace(/^(Gi|Te|Twe|Fo|Hu)/, x => LONG[x]);
 
     const vl = parseInt(v.vlan, 10);
     if (/^\d+$/.test(v.vlan.trim()) && vl >= 1 && vl <= 4094) map.vlan = String(vl); else { bad.vlan = true; map.vlan = DEF.vlan; }
@@ -878,9 +1015,23 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
       return html ? '<span class="var">' + esc(D.map[k]) + "</span>" : D.map[k];
     });
   }
-  function paneLines(e, side) { return e[side].map(l => fill(l, false)); }
+  const CAP_LABEL = { poe: "PoE", stack: "stacking", vpc: "vPC / MC-LAG" };
+  function sideData(e, side) {
+    if (side === "cisco") {
+      const m = curCisco();
+      for (const k of m.keys) if (e.v[k]) return { lines: e.v[k] };
+      if (e.req && !m[e.req]) return { na: "# " + m.name + ": not available (" + CAP_LABEL[e.req] + ")" };
+      return { lines: e.cisco };
+    }
+    const m = curJunos();
+    if (e.req && !m[e.req]) return { na: "# " + m.name + ": not available (" + (e.req === "vpc" ? "MC-LAG" : CAP_LABEL[e.req]) + ")" };
+    return { lines: e.junos };
+  }
+  function paneLines(e, side) { const d = sideData(e, side); return d.na ? [d.na] : d.lines.map(l => fill(l, false)); }
   function paneHtml(e, side) {
-    return e[side].map(l => {
+    const d = sideData(e, side);
+    if (d.na) return '<span class="cm">' + esc(d.na) + "</span>";
+    return d.lines.map(l => {
       if (l.charAt(0) === "#") return '<span class="cm">' + esc(l) + "</span>";
       const raw = l.replace(/\{(\w+)\}/g, "\u0001$1\u0002");
       return esc(raw).replace(/\u0001(\w+)\u0002/g, (m, k) =>
@@ -888,18 +1039,15 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
     }).join("\n");
   }
   function copyText(e, side) {
-    return paneLines(e, side).filter(l => l.charAt(0) !== "#").join("\n").replace(/^ +/gm, m => m);
+    if (sideData(e, side).na) return "";
+    return paneLines(e, side).filter(l => l.charAt(0) !== "#").join("\n");
   }
-
-  const PLAT = {
-    cisco: { cls: "cisco", name: "Cisco Catalyst 3850" },
-    junos: { cls: "juniper", name: "Juniper EX3400" }
-  };
   function pane(e, side) {
-    const p = PLAT[side];
-    const need = side === "junos" && e.kind === "cfg" ? '<span class="need">commit to apply</span>' : "";
-    return '<div class="pane ' + p.cls + '"><div class="pane-head"><span>' + p.name + need +
-      '</span><button class="copy" type="button" data-copy="' + e.id + '" data-side="' + side + '">Copy</button></div>' +
+    const d = sideData(e, side);
+    const name = side === "cisco" ? "Cisco " + curCisco().name + " · " + curCisco().os : "Juniper " + curJunos().name + " · Junos";
+    const need = side === "junos" && e.kind === "cfg" && !d.na ? '<span class="need">commit to apply</span>' : "";
+    return '<div class="pane ' + (side === "cisco" ? "cisco" : "juniper") + '"><div class="pane-head"><span>' + esc(name) + need +
+      '</span><button class="copy" type="button" data-copy="' + e.id + '" data-side="' + side + '"' + (d.na ? " hidden" : "") + '>Copy</button></div>' +
       "<pre>" + paneHtml(e, side) + "</pre></div>";
   }
   function row(e, opts) {
@@ -915,7 +1063,7 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
   /* ---------- search ---------- */
   function words(s) { return s.toLowerCase().match(/[a-z0-9]+/g) || []; }
   const INDEX = E.map(e => {
-    const cmds = e.cisco.concat(e.junos).filter(l => l.charAt(0) !== "#").map(l => l.toLowerCase().replace(/\{\w+\}/g, " ").replace(/\s+/g, " ").trim());
+    const cmds = e.cisco.concat(e.junos, ...Object.keys(e.v).map(k => e.v[k])).filter(l => l.charAt(0) !== "#").map(l => l.toLowerCase().replace(/\{\w+\}/g, " ").replace(/\s+/g, " ").trim());
     const kindWord = e.kind === "cfg" ? "configure config set" : "show display";
     return {
       e, title: words(e.title), tw: words(e.title).concat(words(e.cat)), cmds,
@@ -1000,7 +1148,7 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
   function updateSubs() {
     const m = D.map;
     const subs = {
-      port: D.bad.port ? "Use Gi1/0/1 or ge-0/0/0" : m.port + "  ⇄  " + m.jport,
+      port: D.bad.port ? "Use Gi1/0/1, Ethernet1/1 or ge-0/0/0" : m.port + "  ⇄  " + m.jport,
       vlan: D.bad.vlan ? "Enter 1 to 4094" : "",
       vlanname: D.bad.vlanname ? "Letters, digits, - and _" : "",
       ip: D.bad.ip ? "Use 10.10.10.1/24" : "mask " + m.mask,
@@ -1016,12 +1164,25 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
     });
   }
   function renderSwap() {
-    const l = state.dir === "c2j" ? ["Cisco 3850", "c"] : ["Juniper EX3400", "j"];
-    const r = state.dir === "c2j" ? ["Juniper EX3400", "j"] : ["Cisco 3850", "c"];
-    $("#swap-l").textContent = l[0]; $("#swap-l").className = l[1];
-    $("#swap-r").textContent = r[0]; $("#swap-r").className = r[1];
-    $("#q").placeholder = (state.dir === "c2j" ? "Paste a Cisco command" : "Paste a Junos command") +
-      " or describe the task: mac address-table, trunk, bpdu guard, poe…";
+    const c2j = state.dir === "c2j";
+    $("#plat-c").style.order = c2j ? 0 : 2;
+    $("#swap").style.order = 1;
+    $("#plat-j").style.order = c2j ? 2 : 0;
+    $("#q").placeholder = "Paste a command or describe the task: mac address-table, trunk, bpdu guard, poe…";
+  }
+  function fillSelects() {
+    function build(list, cur) {
+      const groups = [];
+      list.forEach(m => {
+        let g = groups.find(x => x.n === m.grp);
+        if (!g) { g = { n: m.grp, items: [] }; groups.push(g); }
+        g.items.push(m);
+      });
+      return groups.map(g => '<optgroup label="' + esc(g.n) + '">' + g.items.map(m =>
+        '<option value="' + m.id + '"' + (m.id === cur ? " selected" : "") + ">" + esc(m.name) + "</option>").join("") + "</optgroup>").join("");
+    }
+    $("#sel-cisco").innerHTML = build(CISCO, state.cm);
+    $("#sel-junos").innerHTML = build(JUNIPER, state.jm);
   }
   function renderAll() {
     renderSwap();
@@ -1051,6 +1212,7 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
     if (t.dataset.copy) {
       const e = E.find(x => x.id === t.dataset.copy);
       const text = copyText(e, t.dataset.side);
+      if (!text) return;
       const done = () => { t.textContent = "Copied"; setTimeout(() => { t.textContent = "Copy"; }, 1200); };
       const fallback = () => {
         const ta = document.createElement("textarea");
@@ -1071,6 +1233,12 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
       const y = window.scrollY; renderResults(); window.scrollTo({ top: y });
     } else renderTS();
   });
+  function onModel(ev) {
+    if (ev.target.id === "sel-cisco") state.cm = ev.target.value; else state.jm = ev.target.value;
+    save(); D = derive(); updateSubs(); renderAll();
+  }
+  $("#sel-cisco").addEventListener("change", onModel);
+  $("#sel-junos").addEventListener("change", onModel);
   $("#q").addEventListener("input", ev => { state.q = ev.target.value; renderResults(); });
   document.addEventListener("keydown", ev => {
     if (ev.key === "/" && !/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) {
@@ -1078,7 +1246,7 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
     }
   });
 
-  renderFields(); renderFilters(); renderAll();
+  fillSelects(); D = derive(); renderFields(); renderFilters(); renderAll();
 })();
 </script>
 </body>
