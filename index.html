@@ -645,6 +645,28 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
     "set system login user admin class super-user authentication plain-text-password",
     "Junos prompts for the password and stores a hash.");
 
+  // 802.1X / NAC
+  add("auth-sessions", "802.1X / NAC", "show", "Authentication and authorization sessions: all ports",
+    "show authentication sessions",
+    "show dot1x interface",
+    "Cisco calls this authentication sessions, and it also reports the authorization result. It lists each port's session with MAC address, method (dot1x or mab), domain (DATA or VOICE), status (Authz Success, Authz Failed, Unauth) and session ID. Junos lists the same per-port view with role, state, MAC address and user, but has no session ID. Newer IOS-XE releases also accept show access-session. Check the syntax on your release.");
+  add("auth-port", "802.1X / NAC", "show", "Session detail for one port",
+    "show authentication sessions interface {port} details",
+    "show dot1x interface {jport}.0 detail",
+    "Shows which method succeeded, the supplicant MAC and the reauthentication timer. Cisco lists the VLAN and ACL pushed by RADIUS under Server Policies and shows the status of each method, which tells you whether dot1x fell back to MAB. Junos shows the authentication method (Radius or MAC Radius), the authenticated VLAN and any dynamic filter. Junos names the interface with its logical unit, .0.");
+  add("auth-mac", "802.1X / NAC", "show", "Find a session by MAC address",
+    "show authentication sessions mac {maccisco} details",
+    "show dot1x interface detail | match {mac}",
+    "Junos cannot filter dot1x sessions by MAC. The match line only confirms the MAC appears as an authenticated supplicant. To find its port, run show ethernet-switching table {mac}, then show dot1x interface <port>.0 detail. Cisco writes MACs as xxxx.xxxx.xxxx and Junos uses colons.");
+  add("auth-failed", "802.1X / NAC", "show", "Failed authentications",
+    "show authentication sessions | include Unauth|Fail",
+    "show dot1x authentication-failed-users",
+    "Junos keeps a dedicated list of supplicants that failed 802.1X. Cisco has no equivalent table, so this filters the session list for ports left in Unauth or Authz Failed. For the reason a session failed, use the detail entry above and the RADIUS server logs.");
+  add("auth-radius", "802.1X / NAC", "show", "RADIUS server status",
+    "show aaa servers",
+    "show network-access aaa radius-servers\nshow network-access aaa statistics authentication",
+    "Run this first when many ports stop authenticating at once. Cisco shows each server as UP or DEAD with request, timeout and failure counters. Junos shows the configured RADIUS servers and their status, and the statistics line adds accept, reject and timeout counts. On Nexus, 802.1X support depends on the model and release, so confirm it is supported on yours.");
+
   // Services
   add("svc-host", "Services", "cfg", "Hostname",
     "hostname SW-ACCESS-01",
@@ -762,6 +784,11 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
   V("sec-acl-show", { nxos: "show ip access-lists" });
   V("sec-ssh", { nxos: "feature ssh\nssh key rsa 2048" });
   V("sec-user", { nxos: "username admin password <password> role network-admin" });
+  V("auth-sessions", { nxos: "show dot1x all summary" });
+  V("auth-port", { nxos: "show dot1x interface {port} details" });
+  V("auth-mac", { nxos: "show dot1x all details\n# no MAC filter: search the output for the supplicant MAC" });
+  V("auth-failed", { nxos: "show dot1x all summary\n# look for ports whose status is not AUTHORIZED" });
+  V("auth-radius", { nxos: "show radius-server\nshow radius-server statistics <radius-ip>" });
   V("svc-ntp-show", { nxos: "show ntp peer-status" });
   V("svc-span", { nxos: "interface Ethernet1/48\n switchport monitor\nmonitor session 1\n source interface {port} both\n destination interface Ethernet1/48\n no shut" });
   V("tool-ping", { nxos: "ping {remote} count 5" });
@@ -804,6 +831,17 @@ footer { margin-top: 36px; color: var(--muted); font-size: 12px; max-width: 80ch
         ["route-lookup", "Does a route exist and does it point the right way?"],
         ["tool-ping", "Test reachability from the switch."],
         ["tool-trace", "Find where the path stops."]
+      ] },
+    { id: "nac", title: "Device will not authenticate", sub: "802.1X, MAB, RADIUS",
+      intro: "Find out whether the port ever starts a session, which method ran, and whether the RADIUS server answered.",
+      steps: [
+        ["auth-sessions", "Is the port listed, and in what state? Unauth with an unknown domain often means the RADIUS server is unreachable."],
+        ["auth-port", "Which method ran, and did dot1x fall back to MAB? Check the VLAN and ACL the server returned."],
+        ["auth-mac", "Is this specific device authenticated, and on which port?"],
+        ["auth-failed", "Did the device fail authentication? Compare against devices that work."],
+        ["auth-radius", "Is the RADIUS server up? If many ports fail at once, start here."],
+        ["log-port", "Look for authentication events and the time they started."],
+        ["if-status", "A port with link that never starts a session points to the supplicant or to 802.1X not enabled on the port."]
       ] },
     { id: "vlan", title: "VLAN or trunk mismatch", sub: "Wrong VLAN, missing tags",
       intro: "Confirm the VLAN exists, the port is in it, and both trunk ends agree.",
